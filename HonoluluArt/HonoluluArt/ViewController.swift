@@ -10,8 +10,9 @@ import UIKit
 import MapKit
 
 class ViewController: UIViewController {
-
+    
     @IBOutlet weak var mapView: MKMapView!
+    var artworks = [Artwork]()
     let regionRadius: CLLocationDistance = 1000
     func centerMapOnLocation(location: CLLocation) {
         let coordinateRegion = MKCoordinateRegionMakeWithDistance(location.coordinate,
@@ -28,12 +29,42 @@ class ViewController: UIViewController {
         centerMapOnLocation(initialLocation)
         
         // show artwork on map
-        let artwork = Artwork(title: "King David Kalakaua",
-            locationName: "Waikiki Gateway Park",
-            discipline: "Sculpture",
-            coordinate: CLLocationCoordinate2D(latitude: 21.283921, longitude: -157.831661))
         
-        mapView.addAnnotation(artwork)
+        loadInitialData()
+        mapView.addAnnotations((artworks))
+    }
+    
+    func loadInitialData() {
+        // 1
+        let fileName = NSBundle.mainBundle().pathForResource("PublicArt", ofType: "json");
+        var data: NSData?
+        do {
+            data = try NSData(contentsOfFile: fileName!, options: NSDataReadingOptions(rawValue: 0))
+        } catch _ {
+          data = nil
+        }
+        // 2
+        let jsonObject: AnyObject!
+        
+        do {
+        jsonObject = try NSJSONSerialization.JSONObjectWithData(data!,
+            options: NSJSONReadingOptions(rawValue: 0))
+        } catch _ {
+            jsonObject = nil
+        }
+        
+        // 3
+        if let jsonObject = jsonObject as? [String: AnyObject],
+            // 4
+            let jsonData = JSONValue.fromObject(jsonObject)?["data"]?.array {
+                for artworkJSON in jsonData {
+                    if let artworkJSON = artworkJSON.array,
+                        // 5
+                        artwork = Artwork.fromJSON(artworkJSON) {
+                            artworks.append(artwork)
+                    }
+                }
+        }
     }
 
 
